@@ -1,6 +1,5 @@
 name: Deploy Data Pipeline
 
-# Trigger the workflow whenever code is pushed to the main branch
 on:
   push:
     branches:
@@ -11,16 +10,29 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Pulls the latest code from your GitHub repository
       - name: Checkout Repository Code
         uses: actions/checkout@v4
 
-      # Placeholder where we will configure the Databricks sync robot
-      - name: Sync Notebooks to Databricks
-        run: |
-          echo "Preparing to sync PySpark notebooks to Databricks..."
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
 
-      # Placeholder where we will configure the Airflow sync robot
-      - name: Sync DAG to Airflow Server
+      - name: Install Databricks CLI
+        run: pip install databricks-cli
+
+      - name: Sync PySpark Code to Databricks
+        env:
+          # This is where the robot pulls the secret keys we just saved!
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
         run: |
-          echo "Preparing to sync orchestration DAG to Airflow..."
+          echo "Connecting to Databricks and creating project folder..."
+          databricks workspace mkdirs /Shared/airflow_project || true
+          
+          echo "Uploading Pipeline Layers..."
+          databricks workspace import -l PYTHON -o 01_bronze_ingestion_v2.py /Shared/airflow_project/01_bronze_ingestion_v2.py
+          databricks workspace import -l PYTHON -o 02_silver_cleansing_v2.py /Shared/airflow_project/02_silver_cleansing_v2.py
+          databricks workspace import -l PYTHON -o 03_gold_layer_v2 /Shared/airflow_project/03_gold_layer_v2.py
+          
+          echo "Sync Complete!"
