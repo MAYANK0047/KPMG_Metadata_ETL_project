@@ -42,5 +42,5 @@ jobs:
           DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
         run: |
           echo "Executing version-controlled SQL update script..."
-          # Note: Ensure metadata_admin folder exists in root and contains the SQL file
-          databricks statement-execution execute-statement "c00b24f41bdae4c7" --statement "$(cat metadata_admin/change_scd_strategy.sql)" --wait
+          # Use the modern CLI command and ensure we reference the file correctly
+          databricks query-execution execute --sql "$(cat metadata_admin/change_scd_strategy.sql)" --warehouse-id c00b24f41bdae4c7
