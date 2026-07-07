@@ -21,18 +21,20 @@ jobs:
       - name: Install Databricks CLI
         run: pip install databricks-cli
 
-      - name: Sync PySpark Code to Databricks
+      - name: Sync PySpark Code to Live Production Notebooks
         env:
-          # This is where the robot pulls the secret keys we just saved!
           DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
           DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
         run: |
-          echo "Connecting to Databricks and creating project folder..."
-          databricks workspace mkdirs /Shared/airflow_project || true
+          echo "Connecting securely to Databricks..."
           
-          echo "Uploading Pipeline Layers..."
-          databricks workspace import -l PYTHON -o 01_bronze_ingestion_v2.py /Shared/airflow_project/01_bronze_ingestion_v2.py
-          databricks workspace import -l PYTHON -o 02_silver_cleansing_v2.py /Shared/airflow_project/02_silver_cleansing_v2.py
-          databricks workspace import -l PYTHON -o 03_gold_layer_v2 /Shared/airflow_project/03_gold_layer_v2.py
+          # Forcefully overwrite the exact notebooks your live Databricks Jobs are using.
+          # The '-o' flag ensures the old code is erased and replaced with the new code from VS Code.
           
-          echo "Sync Complete!"
+          databricks workspace import -l PYTHON -o 01_bronze_ingestion_v2.py /Users/mayankgodara87@gmail.com/01_bronze_ingestion_v2
+          
+          databricks workspace import -l PYTHON -o 02_silver_cleansing_v2.py /Users/mayankgodara87@gmail.com/02_silver_cleansing_v2
+          
+          databricks workspace import -l PYTHON -o 03_gold_layer_v2 /Users/mayankgodara87@gmail.com/03_gold_layer_v2
+          
+          echo "Live Production Code Sync is 100% Complete!"
