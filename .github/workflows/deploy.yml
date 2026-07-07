@@ -28,14 +28,11 @@ jobs:
         run: |
           echo "Connecting securely to Databricks..."
           
-          # Forcefully overwrite the exact notebooks your live Databricks Jobs are using.
-          # The '-o' flag ensures the old code is erased and replaced with the new code from VS Code.
+          # Forcefully upload Silver Layer
+          databricks workspace import /Users/mayankgodara87@gmail.com/02_silver_cleansing_v2 --file 02_silver_cleansing_v2.py --language PYTHON --overwrite
           
-          databricks workspace import -l PYTHON -o 01_bronze_ingestion_v2.py /Users/mayankgodara87@gmail.com/01_bronze_ingestion_v2
-          
-          databricks workspace import -l PYTHON -o 02_silver_cleansing_v2.py /Users/mayankgodara87@gmail.com/02_silver_cleansing_v2
-          
-          databricks workspace import -l PYTHON -o 03_gold_layer_v2 /Users/mayankgodara87@gmail.com/03_gold_layer_v2
+          # Forcefully upload Gold Layer
+          databricks workspace import /Users/mayankgodara87@gmail.com/03_gold_layer_v2 --file 03_gold_layer_v2.py --language PYTHON --overwrite
           
           echo "Live Production Code Sync is 100% Complete!"
       - name: Execute Metadata DB Updates
