@@ -29,6 +29,8 @@ df_config = spark.read.table("workspace.default.pipeline_configuration_v2") \
 tables_config = [row.asDict(recursive=True) for row in df_config.collect()]
 
 # --- THE FIX: Smart Audit-Based Cascading Skip ---
+skip_pipeline = False
+
 try:
     # Query the audit table to see what Bronze just did
     df_last_bronze = spark.sql(f"""
@@ -40,26 +42,25 @@ try:
     """)
     
     if df_last_bronze.count() > 0:
-        last_status = df_last_bronze.collect()[0]["status"]
-        
-        if last_status == 'SKIPPED_NO_FILES':
-            print("Detected Bronze layer skipped (No new files). Silver standing by.")
+        if df_last_bronze.collect()[0]["status"] == 'SKIPPED_NO_FILES':
+            skip_pipeline = True
             
-            start_time_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            
-            spark.sql(f"""
-                INSERT INTO {audit_table} VALUES (
-                    'ALL_TARGETS', 'Silver_V2', '{start_time_str}', 
-                    '{start_time_str}', 0.0, 
-                    0, 'SKIPPED_NO_FILES', 'None'
-                )
-            """)
-            
-            # Exit immediately, saving compute
-            dbutils.notebook.exit("SKIP_PIPELINE")
-
 except Exception as e:
     print("Audit table check failed or table missing. Proceeding with run.")
+
+# Now we exit OUTSIDE the try/except block so it doesn't get swallowed
+if skip_pipeline:
+    print("Detected Bronze layer skipped (No new files). Silver standing by.")
+    start_time_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    
+    spark.sql(f"""
+        INSERT INTO {audit_table} VALUES (
+            'ALL_TARGETS', 'Silver_V2', '{start_time_str}', 
+            '{start_time_str}', 0.0, 
+            0, 'SKIPPED_NO_FILES', 'None'
+        )
+    """)
+    dbutils.notebook.exit("SKIP_PIPELINE")
 
 # Set up active tables for processing if we didn't exit
 active_tables_with_data = tables_config
